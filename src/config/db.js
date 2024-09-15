@@ -19,6 +19,11 @@ const connectToDB = async () => {
   }
 };
 
+// Why Handle SIGINT?
+// When you terminate your application with Ctrl + C, the default behavior is for the Node.js process to immediately stop. If your application is connected to a MongoDB database, this sudden termination might leave connections open or in an undefined state. Handling SIGINT allows you to cleanly close the MongoDB connection and perform any other cleanup tasks before the application shuts down.
+
+//It is like cleanup thing like what we want to perform when the node js process terminate or exit.
+
 process.on("SIGINT", () => {
   mongoose.connection.close(() => {
     console.log("mongoose close");
