@@ -1,6 +1,7 @@
 const userRepository = require("../repositories/user-repository");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const ServiceError = require("../utils/errors/service-error");
 
 class UserService {
   generateToken(payload, secret, expiryTime) {
@@ -24,22 +25,38 @@ class UserService {
       });
       return user;
     } catch (error) {
-      console.log("Error in service layer");
-      throw error;
+      if (error.name === "ValidationError") {
+        throw error;
+      }
+      throw new ServiceError("Something Went wrong!");
     }
   }
 
-  async findByEmail(email) {
-    return await userRepository.findUserByEmail(email);
+  async checkUserIsVerified(email) {
+    return userRepository.checkUserVerification(email);
   }
 
-  //   async signIn({ email, password, googleId }) {
-  //     try {
-  //       const existingUser = await userRepository.findUserByEmail(email);
-  //       if (!existingUser) {
-  //       }
-  //     } catch (error) {}
-  //   }
+  async findByEmail(email) {
+    try {
+      return await userRepository.findUserByEmail(email);
+    } catch (error) {
+      //Later we going to add service layer error
+      if (error.name === "AttributeNotFound") {
+        throw error;
+      }
+      throw new ServiceError(error.message);
+    }
+  }
+
+  async comparePassword(userPassword, hashedPassword) {
+    try {
+      return await bcrypt.compare(userPassword, hashedPassword);
+    } catch (error) {
+      throw new ServiceError(
+        error.message || "Something wrong in password comparison"
+      );
+    }
+  }
 }
 
 module.exports = new UserService();
