@@ -1,8 +1,8 @@
 const express = require("express");
-const { PORT } = require("./src/config/serverConfig");
-const { connectToDB } = require("./src/config/db");
-const { User } = require("./src/models/user");
-const serverRoutes = require("./src/routes/index");
+const { PORT } = require("./config/serverConfig");
+const { connectToDB } = require("./config/db");
+const { User } = require("./models/user");
+const serverRoutes = require("./routes/index");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 
