@@ -59,12 +59,14 @@ const signIn = async (req, res) => {
       // Send verification mail link
       // Do the email verification process again
     }
-    const isPasswordCorrect = await userService.comparePassword(
-      password,
-      existedUser.password
-    );
-    if (!isPasswordCorrect) {
-      return res.status(404).json({ message: "Invalid Credentials." });
+    if (!googleId) {
+      const isPasswordCorrect = await userService.comparePassword(
+        password,
+        existedUser.password
+      );
+      if (!isPasswordCorrect) {
+        return res.status(404).json({ message: "Invalid Credentials." });
+      }
     }
     //Generate token for user
     const token = userService.generateToken(
