@@ -21,15 +21,6 @@ class UserRepository {
   async findUserByEmail(email) {
     try {
       const existingUser = await User.findOne({ email });
-      if (!existingUser) {
-        // This is custom client error for maybe sending the wrong parameter or details not found!
-        throw new ClientError(
-          "AttributeNotFound",
-          "Invalid username or password!",
-          "Please check your email, as there is not record of the email",
-          httpStatusCode.NOT_FOUND
-        );
-      }
       return existingUser;
     } catch (error) {
       throw error;

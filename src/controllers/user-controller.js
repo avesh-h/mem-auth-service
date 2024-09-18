@@ -1,9 +1,12 @@
 const userService = require("../services/user-service");
 const {
   VERIFY_TOKEN_SECRET,
-  LIVE_URL,
   ACCESS_TOKEN_SECRET,
+  MAIL_SERVICE_URL,
 } = require("../config/serverConfig");
+const axios = require("axios");
+const httpStatusCode = require("../utils/httpStatusCode");
+const ClientError = require("../utils/errors/client-error");
 
 const signUp = async (req, res) => {
   const { email, firstName, lastName, password } = req.body;
@@ -11,7 +14,9 @@ const signUp = async (req, res) => {
     const isAlreadyExist = await userService.findByEmail(email);
     if (isAlreadyExist) {
       // Already exist
-      return res.status(400).json({ message: "User already exists." });
+      return res
+        .status(httpStatusCode.BAD_REQUEST)
+        .json({ message: "User already exists." });
     }
     const hashedPassword = await userService.hashedPassword(password, 12);
     // Creat user
@@ -29,17 +34,37 @@ const signUp = async (req, res) => {
     //Send email for email verification
     const verification = {
       email,
-      verificationLink: `${LIVE_URL}/user/verification?email=${email}&token=${verificationToken}`,
+      verificationLink: `${MAIL_SERVICE_URL}/api/v1/user/verification?email=${encodeURIComponent(
+        email
+      )}&token=${verificationToken}`,
       message: "Please verify your email",
     };
-    return res.status(200).json(result);
+
+    //Make axios call to mail service for send mail
+    await axios.post(
+      `${MAIL_SERVICE_URL}/api/v1/user/send-verification-mail`,
+      verification,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return res.status(httpStatusCode.CREATED).json({
+      message:
+        "Please verify your email address by clicking the verification link",
+      status: "success",
+    });
   } catch (error) {
     // All the error will come in repo layer or service layer will be handled there and throw error here and send this error back to the client.
-    return res.status(error.statusCode).json({
-      message: error.message,
-      status: "failed",
-      error: error,
-    });
+    return res
+      .status(error.statusCode || httpStatusCode.INTERNAL_SERVER_ERROR)
+      .json({
+        message: error.message,
+        status: "failed",
+        error: error,
+      });
   }
 };
 
@@ -48,16 +73,49 @@ const signIn = async (req, res) => {
   try {
     const existedUser = await userService.findByEmail(email);
     if (!existedUser) {
-      // Not exist
-      return res
-        .status(400)
-        .json({ message: "User with this email is not exist!" });
+      // This is custom client error for maybe sending the wrong parameter or details not found!
+      throw new ClientError(
+        "AttributeNotFound",
+        "Invalid username or password!",
+        "Please check your email, as there is not record of the email",
+        httpStatusCode.NOT_FOUND
+      );
     }
     //Check verification
     const isVerified = await userService.checkUserIsVerified(email);
     if (!isVerified) {
       // Send verification mail link
       // Do the email verification process again
+      //Create email verification token
+      const verificationToken = userService.generateToken(
+        { email },
+        VERIFY_TOKEN_SECRET
+      );
+      //Send email for email verification
+      const verification = {
+        email,
+        verificationLink: `${MAIL_SERVICE_URL}/api/v1/user/verification?email=${encodeURIComponent(
+          email
+        )}&token=${verificationToken}`,
+        message: "Please verify your email",
+      };
+
+      //Make axios call to mail service for send mail
+      await axios.post(
+        `${MAIL_SERVICE_URL}/api/v1/user/send-verification-mail`,
+        verification,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      return res.status(httpStatusCode.BAD_REQUEST).json({
+        message:
+          "Account is not verified, Please Verify the account by clicking on the link in the email.",
+        status: "failed",
+      });
     }
     if (!googleId) {
       const isPasswordCorrect = await userService.comparePassword(
@@ -77,9 +135,29 @@ const signIn = async (req, res) => {
       ACCESS_TOKEN_SECRET,
       "1h"
     );
-    return res.status(200).json({ result: existedUser, token });
+    return res.status(httpStatusCode.OK).json({ result: existedUser, token });
   } catch (error) {
     // All the error will come in repo layer or service layer will be handled there and throw error here and send this error back to the client.
+    return res
+      .status(error.statusCode || httpStatusCode.INTERNAL_SERVER_ERROR)
+      .json({
+        message: error.message,
+        status: "failed",
+        error: error,
+      });
+  }
+};
+
+const updateUserVerification = async (req, res) => {
+  const { user } = req.query;
+  try {
+    const userData = await userService.findByEmail(user);
+    userData.isVerified = true;
+    await userData.save();
+    return res
+      .status(httpStatusCode.OK)
+      .json({ message: "User Verification is completed!", status: "success" });
+  } catch (error) {
     return res.status(error.statusCode).json({
       message: error.message,
       status: "failed",
@@ -88,4 +166,4 @@ const signIn = async (req, res) => {
   }
 };
 
-module.exports = { signUp, signIn };
+module.exports = { signUp, signIn, updateUserVerification };
