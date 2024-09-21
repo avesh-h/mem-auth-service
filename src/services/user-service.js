@@ -57,6 +57,15 @@ class UserService {
       );
     }
   }
+
+  async getUserById(id) {
+    try {
+      const user = await userRepository.getUserById(id);
+      return user;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = new UserService();

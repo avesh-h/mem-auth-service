@@ -32,12 +32,14 @@ const signUp = async (req, res) => {
       VERIFY_TOKEN_SECRET
     );
     //Send email for email verification
+    const verificationLink = `${MAIL_SERVICE_URL}/api/v1/user/verification?email=${encodeURIComponent(
+      email
+    )}&token=${verificationToken}`;
+
     const verification = {
       email,
-      verificationLink: `${MAIL_SERVICE_URL}/api/v1/user/verification?email=${encodeURIComponent(
-        email
-      )}&token=${verificationToken}`,
       message: "Please verify your email",
+      html: `<h1>Verification Link : ${verificationLink}</h1>`,
     };
 
     //Make axios call to mail service for send mail
@@ -92,12 +94,14 @@ const signIn = async (req, res) => {
         VERIFY_TOKEN_SECRET
       );
       //Send email for email verification
+      const verificationLink = `${MAIL_SERVICE_URL}/api/v1/user/verification?email=${encodeURIComponent(
+        email
+      )}&token=${verificationToken}`;
+
       const verification = {
         email,
-        verificationLink: `${MAIL_SERVICE_URL}/api/v1/user/verification?email=${encodeURIComponent(
-          email
-        )}&token=${verificationToken}`,
         message: "Please verify your email",
+        html: `<h1>Verification Link : ${verificationLink}</h1>`,
       };
 
       //Make axios call to mail service for send mail
@@ -166,4 +170,20 @@ const updateUserVerification = async (req, res) => {
   }
 };
 
-module.exports = { signUp, signIn, updateUserVerification };
+const getUserDetails = async (req, res) => {
+  const { user } = req.query;
+  try {
+    const userData = await userService.getUserById(user);
+    return res
+      .status(httpStatusCode.OK)
+      .json({ data: userData, status: "success" });
+  } catch (error) {
+    return res.status(error.statusCode).json({
+      message: error.message,
+      status: "failed",
+      error: error,
+    });
+  }
+};
+
+module.exports = { signUp, signIn, updateUserVerification, getUserDetails };
