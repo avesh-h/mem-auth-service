@@ -63,7 +63,12 @@ class UserService {
       const user = await userRepository.getUserById(id);
       return user;
     } catch (error) {
-      throw error;
+      throw new ServiceError(
+        error.name,
+        error.message,
+        error.explanation,
+        error.statusCode
+      );
     }
   }
 }

@@ -38,7 +38,7 @@ class UserRepository {
 
   async getUserById(id) {
     try {
-      const user = await User.findById(id);
+      const user = await User.findById(id).select("name email _id");
       return user;
     } catch (error) {
       throw error;
