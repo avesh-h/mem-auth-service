@@ -178,12 +178,37 @@ const getUserDetails = async (req, res) => {
       .status(httpStatusCode.OK)
       .json({ data: userData, status: "success" });
   } catch (error) {
-    return res.status(error.statusCode).json({
-      message: error.message,
-      status: "failed",
-      error: error,
-    });
+    return res
+      .status(error.statusCode || httpStatusCode.INTERNAL_SERVER_ERROR)
+      .json({
+        message: error.message,
+        status: "failed",
+        error: error,
+      });
   }
 };
 
-module.exports = { signUp, signIn, updateUserVerification, getUserDetails };
+const searchUsersByNameOrEmail = async (req, res) => {
+  const keyWords = req?.query?.search;
+  const userId = req?.query?.user || req?.userId;
+  try {
+    const users = await userService.getUsersByNameOrEmail(keyWords, userId);
+    return res.status(httpStatusCode.OK).json({ users, status: "success" });
+  } catch (error) {
+    return res
+      .status(error.statusCode || httpStatusCode.INTERNAL_SERVER_ERROR)
+      .json({
+        message: error.message,
+        status: "failed",
+        error: error,
+      });
+  }
+};
+
+module.exports = {
+  signUp,
+  signIn,
+  updateUserVerification,
+  getUserDetails,
+  searchUsersByNameOrEmail,
+};

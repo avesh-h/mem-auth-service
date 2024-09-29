@@ -44,6 +44,28 @@ class UserRepository {
       throw error;
     }
   }
+
+  // Get all users by searching match email or name
+  async getUsersByNameOrEmail(keyWords, userId) {
+    try {
+      const searchQuery = keyWords
+        ? {
+            $or: [
+              {
+                name: { $regex: keyWords, $options: "i" },
+              },
+              {
+                email: { $regex: keyWords, $options: "i" },
+              },
+            ],
+          }
+        : {};
+      const users = await User.find(searchQuery).find({ _id: { $ne: userId } }); //For exclude current user account from search
+      return users;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = new UserRepository();

@@ -71,6 +71,23 @@ class UserService {
       );
     }
   }
+
+  async getUsersByNameOrEmail(keyWords, userId) {
+    try {
+      const users = await userRepository.getUsersByNameOrEmail(
+        keyWords,
+        userId
+      );
+      return users;
+    } catch (error) {
+      throw new ServiceError(
+        error.name,
+        error.message,
+        error.explanation,
+        error.statusCode
+      );
+    }
+  }
 }
 
 module.exports = new UserService();
